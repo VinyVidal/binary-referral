@@ -15,10 +15,15 @@ class CreateUsersTable extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
+            $table->string('username')->unique();
             $table->string('email')->unique();
-            $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+
+            $table->integer('level')->default(0); // 0 = nao indicado | 1 = primeiro indicado (lado esquerdo) | 2 = segundo indicado (lado direito)
+            $table->integer('left_points')->default(0);
+            $table->integer('right_points')->default(0);
+            $table->foreignId('referrer_id')->nullable()->constrained('users'); // Usuário que indicou esta instancia de usuário
+
             $table->rememberToken();
             $table->timestamps();
         });

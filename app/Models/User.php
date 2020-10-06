@@ -17,9 +17,13 @@ class User extends Authenticatable
      * @var array
      */
     protected $fillable = [
-        'name',
+        'username',
         'email',
         'password',
+        'level',
+        'left_points',
+        'right_points',
+        'referrer_id',
     ];
 
     /**
@@ -38,6 +42,39 @@ class User extends Authenticatable
      * @var array
      */
     protected $casts = [
-        'email_verified_at' => 'datetime',
+        //
     ];
+
+    // ACCESSORS
+
+    public function getReferralLinkAttribute()
+    {
+        return $this->referral_link = route('register', ['ref' => $this->username]);
+    }
+
+    // METHODS
+
+    /**
+     * Retorna o usuário que indicou este usuário
+     */
+    public function referrer()
+    {
+        return $this->belongsTo(User::class, 'referrer_id');
+    }
+
+    /**
+     * Retorna as indicações que o usuário realizou
+     */
+    public function referrals()
+    {
+        return $this->hasMany(Referral::class, 'referrer_id');
+    }
+
+    /**
+     * Retorna os usuários que receberam indicação
+     */
+    public function referred_users()
+    {
+        // TODO
+    }
 }
