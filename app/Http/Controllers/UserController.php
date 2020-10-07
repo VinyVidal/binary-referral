@@ -4,11 +4,19 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
+    public function earnPoints() {
+        $user = Auth::user();
+        $user->points += 100;
+        $user->save();
 
-    public function showLogin(Request $request)
+        return redirect()->back()->with('success', 'Você ganhou 100 pontos!');
+    }
+
+    public function showLogin()
     {
         return view('login');
     }
@@ -18,10 +26,7 @@ class UserController extends Controller
         if(Auth::attempt($request->only('email', 'password'))) {
             return redirect()->route('dashboard');
         } else {
-            return redirect()->back()->with([
-                'success' => false,
-                'message' => 'Usuário ou senha incorretos'
-            ]);
+            return redirect()->back()->with('error', 'Usuário ou senha incorretos');
         }
     }
 
@@ -40,7 +45,7 @@ class UserController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function create()
+    public function create(Request $request)
     {
         // Caso exista o valor ref na url página de cadastro
         if($request->has('ref')) {
@@ -61,8 +66,7 @@ class UserController extends Controller
     {
         try {
             $data = $request->all();
-            $data['username'] = explode('@', $data['email'])[0];
-            // TODO: Caso o username exista, adicionar um número na frente
+            $data['password'] = bcrypt($data['password']);
 
             $referrer = User::where('username', session('referrer'))->first();
             
@@ -72,33 +76,19 @@ class UserController extends Controller
                 $data['referrer_id'] = $referrer->id;
                 if($referrer->referrals->count() >= 2) {
                     // Retonar erro caso 2 usuários já tiverem usado o mesmo link de indicação
-                    return redirect()->back()->with([
-                        'success' => false,
-                        'message' => 'Erro, este link de indicação pertence à um usuário que já atingiu o numero limite de indicações.'
-                        ]);
+                    return redirect()->back()->with('message', 'Erro, este link de indicação pertence à um usuário que já atingiu o numero limite de indicações.');
                 } else if($referrer->referrals->count() >= 1) {
                     // Se este link já foi usado por 1 usuário, alocar o novo usuário à direita da "arvore"
                     $data['level'] = 2;
-                    
-                    $user = new User;
-                    $user->fill($data);
-                    $user->save();
 
-                    // Atribuir 100 pontos do lado direto da árvore ao usuário que indicou o novo usuário cadastrado
-                    $referrer->right_points += 100;
-                    $referrer->save();
                 } else {
                     // Se este link ainda não foi usado, alocar o novo usuário à esquerda da "árvore"
                     $data['level'] = 1;
-
-                    $user = new User;
-                    $user->fill($data);
-                    $user->save();
-                    
-                    // Atribuir 100 pontos do lado esquerdo da árvore ao usuário que indicou o novo usuário cadastrado
-                    $referrer->left_points += 100;
-                    $referrer->save();
                 }
+
+                $user = new User;
+                $user->fill($data);
+                $user->save();
                 
             } else {
                 // Cadastro normal
@@ -110,10 +100,7 @@ class UserController extends Controller
             }
 
             Auth::login($user);
-            return redirect()->route('dashboard', [
-                'success' => true,
-                'message' => 'Seu cadastro foi realizado com sucesso!'
-            ]);
+            return redirect()->route('dashboard')->with('success', 'Cadastro realizado com sucesso!');
         
         } catch (Exception $ex) {
             return redirect()->back()->with([
