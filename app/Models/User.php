@@ -63,18 +63,10 @@ class User extends Authenticatable
     }
 
     /**
-     * Retorna as indicações que o usuário realizou
+     * Retorna os usuários que receberam indicação
      */
     public function referrals()
     {
-        return $this->hasMany(Referral::class, 'referrer_id');
-    }
-
-    /**
-     * Retorna os usuários que receberam indicação
-     */
-    public function referred_users()
-    {
-        // TODO
+        return $this->hasMany(User::class, 'referrer_id');
     }
 }
